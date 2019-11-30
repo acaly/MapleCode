@@ -64,10 +64,21 @@ namespace MapleCodeSharp.Reader
         public static Document ReadFromData(byte[] data)
         {
             using var s = new MemoryStream(data);
-            return ReadFromStream(s);
+            return ReadFromStream(s, null);
+        }
+
+        public static Document ReadFromData(byte[] data, Document externalTypeList)
+        {
+            using var s = new MemoryStream(data);
+            return ReadFromStream(s, externalTypeList);
         }
 
         public static Document ReadFromStream(Stream stream)
+        {
+            return ReadFromStream(stream, null);
+        }
+
+        public static Document ReadFromStream(Stream stream, Document externalTypeList)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead) throw new ArgumentException("Cannot read from stream", nameof(stream));
@@ -100,6 +111,15 @@ namespace MapleCodeSharp.Reader
             stream.Read(headerBuffer, 0, dataSize);
             var dataLength = BitConverter.ToInt32(headerBuffer, 0);
 
+            if (externalTypeList != null && typeLength != 0)
+            {
+                throw new ReaderException("Cannot specify external type list for document with internal type list");
+            }
+            if (externalTypeList == null && typeLength == 0 && nodeLength != 0)
+            {
+                throw new ReaderException("No type list specified");
+            }
+
             var totalLength = strLength + typeLength + nodeLength + dataLength;
 
             var docData = new byte[totalLength];
@@ -117,7 +137,14 @@ namespace MapleCodeSharp.Reader
             ret.SetupReadFunctions(sizeMode);
             ret.SetupSectionRange(strLength, typeLength, nodeLength, dataLength);
             ret.ReadStringTable();
-            ret.ReadNodeTypeEntries();
+            if (typeLength != 0)
+            {
+                ret.ReadNodeTypeEntries();
+            }
+            else if (externalTypeList != null)
+            {
+                ret._types.AddRange(externalTypeList._types);
+            }
 
             return ret;
         }
@@ -307,14 +334,14 @@ namespace MapleCodeSharp.Reader
                 if (node == start) return -1;
                 if (start < node && node < end)
                 {
-                    return GetParentNode(node, start);
+                    return GetParentNodeInternal(node, start);
                 }
                 start = end;
                 end = GetNextNode(start);
             }
         }
 
-        private int GetParentNode(int node, int start)
+        private int GetParentNodeInternal(int node, int start)
         {
             int pos = NodeSectionOffset + start;
             var type = GetNodeType(_readTypeIndex(ref pos));
@@ -330,48 +357,11 @@ namespace MapleCodeSharp.Reader
                 if (child == node) return start;
                 if (child < node && node < childEnd)
                 {
-                    return GetParentNode(node, child);
+                    return GetParentNodeInternal(node, child);
                 }
                 child = childEnd;
                 childEnd = GetNextNode(child);
             }
-        }
-
-        //TODO remove
-        internal int GetParentNode(int node, out int siblingEnd)
-        {
-            if (node == 0)
-            {
-                siblingEnd = -1;
-                return -1;
-            }
-
-            int start = 0, end = NodeSectionLength, parent = -1;
-            while (start < node && end > node)
-            {
-                var scan = start;
-                var scanLast = start;
-                while (scan < node)
-                {
-                    scanLast = scan;
-                    scan = GetNextNode(scan);
-                }
-                if (scan == node)
-                {
-                    siblingEnd = end;
-                    return parent;
-                }
-                start = scan;
-                end = scanLast;
-                GetChildNodeRange(start, out start, out _);
-                if (start == -2)
-                {
-                    siblingEnd = end;
-                    return scan;
-                }
-            }
-            siblingEnd = end;
-            return start;
         }
     }
 }

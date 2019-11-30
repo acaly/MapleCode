@@ -178,6 +178,30 @@ namespace MapleCodeSharpTest
         }
 
         [Fact]
+        public void CompileGeneric()
+        {
+            var str = "n1<t1, t2> 1; r1: n2<tt>;";
+            var data = MapleCodeCompiler.Compile(str);
+
+            var doc = Document.ReadFromData(data);
+            var nodes = doc.AllNodes.ToArray();
+            Assert.Equal(2, nodes.Length);
+
+            var n1 = nodes[0];
+            Assert.Equal("n1", n1.NodeType.Name);
+            Assert.Equal(2, n1.NodeType.GenericArgCount);
+            Assert.Equal(new[] { "t1", "t2" }, n1.ReadGenericArgs());
+            Assert.Equal(1u, Assert.Single(n1.ReadArguments()).GetUnsigned());
+
+            var n2 = nodes[1];
+            Assert.Equal("n2", n2.NodeType.Name);
+            Assert.Equal(1, n2.NodeType.GenericArgCount);
+            Assert.Equal("tt", Assert.Single(n2.ReadGenericArgs()));
+            Assert.Empty(n2.NodeType.ArgumentTypes);
+            Assert.Empty(n2.ReadArguments());
+        }
+
+        [Fact]
         public void CompileChild()
         {
             var str = "n1 { n2 { n3; n4 { n5; n6 {} n7; } } n8; } n9;";
@@ -237,6 +261,3 @@ namespace MapleCodeSharpTest
         }
     }
 }
-
-//TODO compile without type list
-//TODO array

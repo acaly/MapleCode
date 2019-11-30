@@ -67,6 +67,7 @@ namespace MapleCodeSharp.Compiler
                 _offset.Add(pos);
                 pos += size[(int)_type[i]];
             }
+            _offset.Add(pos);
             for (int i = 0; i < _data.Count; ++i)
             {
                 if (_type[i] == SlotType.NodeLengthEnd)

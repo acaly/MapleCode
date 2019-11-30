@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace MapleCodeSharp.Compiler
@@ -19,13 +20,14 @@ namespace MapleCodeSharp.Compiler
 
         private readonly Dictionary<string, int> _namedNode = new Dictionary<string, int>();
         private readonly Dictionary<string, List<NodeType>> _nodeTypes = new Dictionary<string, List<NodeType>>();
+        private readonly bool _lockNodeTypes = false;
 
         private readonly List<int> _fixNodeLabelPos = new List<int>();
         private readonly List<string> _fixNodeLabelName = new List<string>();
 
         private readonly List<byte> _nodeArgTypes = new List<byte>();
 
-        private struct NodeType
+        internal struct NodeType
         {
             public int TypeIndex;
             public byte GenericCount;
@@ -51,7 +53,24 @@ namespace MapleCodeSharp.Compiler
 
         public static byte[] Compile(IEnumerable<char> input)
         {
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
             return new MapleCodeCompiler(input).Compile();
+        }
+
+        public static byte[] Compile(ExternalNodeTypeList typeList, IEnumerable<char> input)
+        {
+            if (typeList == null)
+            {
+                throw new ArgumentNullException(nameof(typeList));
+            }
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+            return new MapleCodeCompiler(typeList, input).Compile();
         }
 
         private MapleCodeCompiler(IEnumerable<char> input)
@@ -65,6 +84,26 @@ namespace MapleCodeSharp.Compiler
             _stringTable = new StringTable(_dataSection);
             _typeTable = new TypeTable(_stringTable, _dataSection);
             _nodeSection = new DataSection();
+        }
+
+        private MapleCodeCompiler(ExternalNodeTypeList typeList, IEnumerable<char> input)
+        {
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+            _tokenInput = Tokenizer.Create(Preprocessor.Create(input)).GetEnumerator();
+            _dataSection = new DataSection();
+            _stringTable = new StringTable(_dataSection);
+            _typeTable = new TypeTable(_stringTable, _dataSection);
+            _nodeSection = new DataSection();
+
+            foreach (var e in typeList._nodeTypes)
+            {
+                _nodeTypes.Add(e.Key, e.Value);
+            }
+            typeList._nodeTypes.Clear();
+            _lockNodeTypes = true;
         }
 
         private byte[] Compile()
@@ -84,6 +123,10 @@ namespace MapleCodeSharp.Compiler
 
             int strSize = _stringTable.StringIndexSize, typeSize = _typeTable.TypeIndexSize;
             int dataSize = 1, nodeSize = 1, newDataSize, newNodeSize;
+            if (_lockNodeTypes)
+            {
+                typeSize = GetByteSize(_nodeTypes.SelectMany(e => e.Value).Select(t => t.TypeIndex).Max());
+            }
             do
             {
                 newDataSize = _dataSection.TryCalculateSize(strSize, typeSize, nodeSize, dataSize);
@@ -94,8 +137,8 @@ namespace MapleCodeSharp.Compiler
             int sizeMode = sizeModeArray[strSize] | sizeModeArray[typeSize] << 2 |
                 sizeModeArray[nodeSize] << 4 | sizeModeArray[dataSize] << 6;
 
-            _dataSection.GenerateOffset(1, 1, 1, 1);
-            _nodeSection.GenerateOffset(1, 1, 1, 1);
+            _dataSection.GenerateOffset(strSize, typeSize, nodeSize, dataSize);
+            _nodeSection.GenerateOffset(strSize, typeSize, nodeSize, dataSize);
 
             _dataSection.FixOffset(DataSection.SlotType.DataIndex, _dataSection);
             _nodeSection.FixOffset(DataSection.SlotType.DataIndex, _dataSection);
@@ -256,6 +299,10 @@ namespace MapleCodeSharp.Compiler
                     }
                 }
                 return (uint)type.TypeIndex;
+            }
+            if (_lockNodeTypes)
+            {
+                throw new CompilerException("Undefined node type");
             }
             var ret = _typeTable.Add(name, _nodeArgTypes, genericCount, hasChildren);
             typeOverloadList.Add(new NodeType
