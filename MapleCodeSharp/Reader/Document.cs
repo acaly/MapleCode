@@ -61,6 +61,12 @@ namespace MapleCodeSharp.Reader
             return ret;
         }
 
+        public static Document ReadFromData(byte[] data)
+        {
+            using var s = new MemoryStream(data);
+            return ReadFromStream(s);
+        }
+
         public static Document ReadFromStream(Stream stream)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));

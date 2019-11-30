@@ -10,21 +10,15 @@ using Xunit;
 
 namespace MapleCodeSharpTest
 {
-    public class CompilerTest
+    public class CompileTest
     {
-        private static Document ReadDocument(params byte[] data)
-        {
-            using var s = new MemoryStream(data);
-            return Document.ReadFromStream(s);
-        }
-
         [Fact]
         public void CompileEmpty()
         {
             var str = "";
             var data = MapleCodeCompiler.Compile(str);
 
-            var doc = ReadDocument(data);
+            var doc = Document.ReadFromData(data);
             Assert.Empty(doc.AllNodes.ToArray());
         }
 
@@ -34,7 +28,7 @@ namespace MapleCodeSharpTest
             var str = "n1 0; n2 1; n3 -2; n4 0.5; n5 -0.25;";
             var data = MapleCodeCompiler.Compile(str);
 
-            var doc = ReadDocument(data);
+            var doc = Document.ReadFromData(data);
             var nodes = doc.AllNodes.ToArray();
             Assert.Equal(5, nodes.Length);
 
@@ -65,7 +59,7 @@ namespace MapleCodeSharpTest
             var str = "n1 1u8, 2u16, 3u32; n2 4s8, 5s16, 6s32; n3 7f;";
             var data = MapleCodeCompiler.Compile(str);
 
-            var doc = ReadDocument(data);
+            var doc = Document.ReadFromData(data);
             var nodes = doc.AllNodes.ToArray();
             Assert.Equal(3, nodes.Length);
 
@@ -101,7 +95,7 @@ namespace MapleCodeSharpTest
                 "n4 data hex { 00 11 2233 ffeeddcc F0 };";
             var data = MapleCodeCompiler.Compile(str);
 
-            var doc = ReadDocument(data);
+            var doc = Document.ReadFromData(data);
             var nodes = doc.AllNodes.ToArray();
             Assert.Equal(4, nodes.Length);
 
@@ -150,7 +144,7 @@ namespace MapleCodeSharpTest
             var str = "r1: n1 0, r2, r2.x; r2: n1 1, r1, r1.y; r3: n1 2, r3, r3.z;";
             var data = MapleCodeCompiler.Compile(str);
 
-            var doc = ReadDocument(data);
+            var doc = Document.ReadFromData(data);
             var nodes = doc.AllNodes.ToArray();
             Assert.Equal(3, nodes.Length);
 
@@ -189,7 +183,7 @@ namespace MapleCodeSharpTest
             var str = "n1 { n2 { n3; n4 { n5; n6 {} n7; } } n8; } n9;";
             var data = MapleCodeCompiler.Compile(str);
 
-            var doc = ReadDocument(data);
+            var doc = Document.ReadFromData(data);
             var nodes = doc.AllNodes.ToArray();
             Assert.Equal(2, nodes.Length);
 
