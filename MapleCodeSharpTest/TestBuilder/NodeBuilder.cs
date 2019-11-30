@@ -34,9 +34,9 @@ namespace MapleCodeSharpTest.TestBuilder
             return ret;
         }
 
-        public void WriteChildrenLength()
+        public int WriteChildrenLength()
         {
-            _builder.NodeData.AppendNumber(0, _builder.SizeNode);
+            return _builder.NodeData.AppendNumber(0, _builder.SizeNode);
         }
 
         public void FixChildrenLength(int pos)

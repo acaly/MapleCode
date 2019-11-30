@@ -14,7 +14,7 @@ namespace MapleCodeSharpTest.TestBuilder
 
         public int AppendRaw(byte[] data)
         {
-            var ret = (int)_stream.Length;
+            var ret = (int)_stream.Position;
             _stream.Write(data, 0, data.Length);
             return ret;
         }

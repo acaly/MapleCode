@@ -183,7 +183,64 @@ namespace MapleCodeSharpTest
             Assert.Equal("z", args3[2].GetField());
         }
 
-        //TODO compile children
+        [Fact]
+        public void CompileChild()
+        {
+            var str = "n1 { n2 { n3; n4 { n5; n6 {} n7; } } n8; } n9;";
+            var data = MapleCodeCompiler.Compile(str);
+
+            var doc = ReadDocument(data);
+            var nodes = doc.AllNodes.ToArray();
+            Assert.Equal(2, nodes.Length);
+
+            var n1 = nodes[0];
+            Assert.Equal("n1", n1.NodeType.Name);
+            Assert.True(n1.NodeType.HasChildren);
+            var n1c = n1.Children.ToArray();
+            Assert.Equal(2, n1c.Length);
+
+            var n2 = n1c[0];
+            Assert.Equal("n2", n2.NodeType.Name);
+            Assert.True(n2.NodeType.HasChildren);
+            var n2c = n2.Children.ToArray();
+            Assert.Equal(2, n2c.Length);
+
+            var n3 = n2c[0];
+            Assert.Equal("n3", n3.NodeType.Name);
+            Assert.False(n3.NodeType.HasChildren);
+            Assert.Empty(n3.Children);
+
+            var n4 = n2c[1];
+            Assert.Equal("n4", n4.NodeType.Name);
+            Assert.True(n4.NodeType.HasChildren);
+            var n4c = n4.Children.ToArray();
+            Assert.Equal(3, n4c.Length);
+
+            var n5 = n4c[0];
+            Assert.Equal("n5", n5.NodeType.Name);
+            Assert.False(n5.NodeType.HasChildren);
+            Assert.Empty(n5.Children);
+
+            var n6 = n4c[1];
+            Assert.Equal("n6", n6.NodeType.Name);
+            Assert.True(n6.NodeType.HasChildren);
+            Assert.Empty(n6.Children);
+
+            var n7 = n4c[2];
+            Assert.Equal("n7", n7.NodeType.Name);
+            Assert.False(n7.NodeType.HasChildren);
+            Assert.Empty(n7.Children);
+
+            var n8 = n1c[1];
+            Assert.Equal("n8", n8.NodeType.Name);
+            Assert.False(n8.NodeType.HasChildren);
+            Assert.Empty(n8.Children);
+
+            var n9 = nodes[1];
+            Assert.Equal("n9", n9.NodeType.Name);
+            Assert.False(n9.NodeType.HasChildren);
+            Assert.Empty(n9.Children);
+        }
     }
 }
 

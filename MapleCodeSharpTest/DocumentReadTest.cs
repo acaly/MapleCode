@@ -111,6 +111,63 @@ namespace MapleCodeSharpTest
                 Assert.Equal(new byte[] { 0, 1, 2, 3, 4 }, Assert.Single(node3.ReadArguments()).GetData());
             }
         }
+
+        [Fact]
+        public void ReadChildren()
+        {
+            Document doc;
+            {
+                var builder = new DocumentBuilder(1, 1, 1, 1);
+                var type1 = builder.Type.AddType("node_a", 0, true);
+                var type2 = builder.Type.AddType("node_b", 0, false);
+                builder.Node.WriteNode(type1);
+                var len1 = builder.Node.WriteChildrenLength();
+                {
+                    builder.Node.WriteNode(type2);
+                    builder.Node.WriteNode(type1);
+                    var len2 = builder.Node.WriteChildrenLength();
+                    {
+                        builder.Node.WriteNode(type1);
+                        var len3 = builder.Node.WriteChildrenLength();
+                        {
+                            builder.Node.WriteNode(type2);
+                        }
+                        builder.Node.FixChildrenLength(len3);
+                        builder.Node.WriteNode(type2);
+                    }
+                    builder.Node.FixChildrenLength(len2);
+                }
+                builder.Node.FixChildrenLength(len1);
+                doc = ReadDocument(builder.Generate());
+            }
+            {
+                var root = doc.AllNodes.ToArray();
+                var n1 = Assert.Single(root);
+
+                Assert.Equal("node_a", n1.NodeType.Name);
+                var n1c = n1.Children.ToArray();
+                Assert.Equal(2, n1c.Length);
+
+                var n11 = n1c[0];
+                Assert.Equal("node_b", n11.NodeType.Name);
+                Assert.Empty(n11.Children);
+
+                var n12 = n1c[1];
+                Assert.Equal("node_a", n12.NodeType.Name);
+                var n12c = n12.Children.ToArray();
+                Assert.Equal(2, n12c.Length);
+
+                var n121 = n12c[0];
+                Assert.Equal("node_a", n121.NodeType.Name);
+                var n1211 = Assert.Single(n121.Children);
+                Assert.Equal("node_b", n1211.NodeType.Name);
+                Assert.Empty(n1211.Children);
+
+                var n122 = n12c[1];
+                Assert.Equal("node_b", n122.NodeType.Name);
+                Assert.Empty(n122.Children);
+            }
+        }
     }
 }
 

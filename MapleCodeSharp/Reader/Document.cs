@@ -76,31 +76,23 @@ namespace MapleCodeSharp.Reader
             var nodeSize = sizeArray[(sizeMode >> 4) & 3];
             var dataSize = sizeArray[(sizeMode >> 6) & 3];
 
-            int strLength = 0, typeLength = 0, nodeLength = 0, dataLength = 0;
-            if (strSize > 0)
+            if (strSize == 0 || typeSize == 0 || nodeSize == 0 || dataSize == 0)
             {
-                Array.Clear(headerBuffer, 0, 4);
-                stream.Read(headerBuffer, 0, strSize);
-                strLength = BitConverter.ToInt32(headerBuffer, 0);
+                throw new ReaderException("Invalid size mode");
             }
-            if (typeSize > 0)
-            {
-                Array.Clear(headerBuffer, 0, 4);
-                stream.Read(headerBuffer, 0, typeSize);
-                typeLength = BitConverter.ToInt32(headerBuffer, 0);
-            }
-            if (nodeSize > 0)
-            {
-                Array.Clear(headerBuffer, 0, 4);
-                stream.Read(headerBuffer, 0, nodeSize);
-                nodeLength = BitConverter.ToInt32(headerBuffer, 0);
-            }
-            if (dataSize > 0)
-            {
-                Array.Clear(headerBuffer, 0, 4);
-                stream.Read(headerBuffer, 0, dataSize);
-                dataLength = BitConverter.ToInt32(headerBuffer, 0);
-            }
+
+            Array.Clear(headerBuffer, 0, 4);
+            stream.Read(headerBuffer, 0, strSize);
+            var strLength = BitConverter.ToInt32(headerBuffer, 0);
+            Array.Clear(headerBuffer, 0, 4);
+            stream.Read(headerBuffer, 0, typeSize);
+            var typeLength = BitConverter.ToInt32(headerBuffer, 0);
+            Array.Clear(headerBuffer, 0, 4);
+            stream.Read(headerBuffer, 0, nodeSize);
+            var nodeLength = BitConverter.ToInt32(headerBuffer, 0);
+            Array.Clear(headerBuffer, 0, 4);
+            stream.Read(headerBuffer, 0, dataSize);
+            var dataLength = BitConverter.ToInt32(headerBuffer, 0);
 
             var totalLength = strLength + typeLength + nodeLength + dataLength;
 
@@ -252,27 +244,15 @@ namespace MapleCodeSharp.Reader
             return _types[index];
         }
 
-        public void CopyData(int sourceOffset, byte[] buffer, int start, int len)
+        internal void CopyData(int sourceOffset, byte[] buffer, int start, int len)
         {
-            if (buffer == null)
+            if (sourceOffset < 0 || len < 0 || sourceOffset + len > _dataSectionRange.End - _dataSectionRange.Start)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                throw new ReaderException("Invalid data offset");
             }
-            if (sourceOffset < 0 || sourceOffset >= _dataSectionRange.End - _dataSectionRange.Start)
+            if (start < 0 || start + len > buffer.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(sourceOffset));
-            }
-            if (len < 0 || sourceOffset + len > _dataSectionRange.End - _dataSectionRange.Start)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
-            if (start < 0 || start >= buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(start));
-            }
-            if (start + len > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
+                throw new ReaderException("Invalid data offset");
             }
             Buffer.BlockCopy(_data, _dataSectionRange.Start + sourceOffset, buffer, start, len);
         }
