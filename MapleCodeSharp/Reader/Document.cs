@@ -321,7 +321,7 @@ namespace MapleCodeSharp.Reader
             var childEnd = GetNextNode(child);
             while (true)
             {
-                if (child == node) return node;
+                if (child == node) return start;
                 if (child < node && node < childEnd)
                 {
                     return GetParentNode(node, child);

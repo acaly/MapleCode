@@ -33,13 +33,11 @@ namespace MapleCodeSharpTest.TestBuilder
             }
         }
 
-        private static readonly int[] _size = new int[] { 0, 1, 2, 4 };
-
-        public TypeTableBuilder(int stringSizeMode, int dataSizeMode,
+        public TypeTableBuilder(int stringSize, int dataSize,
             Func<string, int> stringBuilderFunc, DataSectionBuilder dataBuilder)
         {
-            _stringSizeMode = stringSizeMode;
-            _dataSizeMode = dataSizeMode;
+            _stringSize = stringSize;
+            _dataSize = dataSize;
             _stringBuilder = stringBuilderFunc;
             _dataBuilder = dataBuilder;
         }
@@ -48,7 +46,7 @@ namespace MapleCodeSharpTest.TestBuilder
         private readonly DataSectionBuilder _dataBuilder;
         private readonly Dictionary<string, List<int>> _typeDictionary = new Dictionary<string, List<int>>();
         private readonly List<TableEntry> _typeList = new List<TableEntry>();
-        private readonly int _stringSizeMode, _dataSizeMode;
+        private readonly int _stringSize, _dataSize;
 
         public int AddType(string name, int genericCount, bool hasChild, params byte[] types)
         {
@@ -97,16 +95,16 @@ namespace MapleCodeSharpTest.TestBuilder
 
         public byte[] Generate()
         {
-            int entrySize = _size[_stringSizeMode] + _size[_dataSizeMode] + 2;
+            int entrySize = _stringSize + _dataSize + 2;
             using var ms = new MemoryStream();
             using var bw = new BinaryWriter(ms);
             foreach (var ee in _typeList)
             {
                 bw.Write(ee.NameIndex);
-                ms.Seek(_size[_stringSizeMode] - 4, SeekOrigin.Current);
+                ms.Seek(_stringSize - 4, SeekOrigin.Current);
 
                 bw.Write(ee.ArgTypesDataOffset);
-                ms.Seek(_size[_dataSizeMode] - 4, SeekOrigin.Current);
+                ms.Seek(_dataSize - 4, SeekOrigin.Current);
 
                 bw.Write((byte)ee.Generic);
                 bw.Write(ee.HasChild ? (byte)1 : (byte)0);

@@ -15,16 +15,41 @@ namespace MapleCodeSharpTest.TestBuilder
         public DataSectionBuilder NodeData { get; }
         public NodeBuilder Node { get; }
 
-        public readonly int SizeStr, SizeType, SizeNode, SizeData;
+        internal readonly int SizeStr, SizeType, SizeNode, SizeData;
+        private static readonly int[] SizeModes = new[] { 0, 1, 2, 0, 3 };
+
+        private static bool CheckSize(int s)
+        {
+            if (s < 1 || s > 4 || s == 3) return false;
+            return true;
+        }
 
         public DocumentBuilder(int sizeStr, int sizeType, int sizeNode, int sizeData)
         {
+            if (!CheckSize(sizeStr))
+            {
+                throw new ArgumentOutOfRangeException(nameof(sizeStr));
+            }
+            if (!CheckSize(sizeType))
+            {
+                throw new ArgumentOutOfRangeException(nameof(sizeType));
+            }
+            if (!CheckSize(sizeNode))
+            {
+                throw new ArgumentOutOfRangeException(nameof(sizeNode));
+            }
+            if (!CheckSize(sizeData))
+            {
+                throw new ArgumentOutOfRangeException(nameof(sizeData));
+            }
+
             SizeStr = sizeStr;
             SizeType = sizeType;
             SizeNode = sizeNode;
             SizeData = sizeData;
 
-            _sizeMode = sizeStr | sizeType << 2 | sizeNode << 4 | sizeData << 6;
+            _sizeMode = SizeModes[sizeStr] | SizeModes[sizeType] << 2 |
+                SizeModes[sizeNode] << 4 | SizeModes[sizeData] << 6;
 
             Data = new DataSectionBuilder();
             String = new StringTableBuilder(Data, sizeData);
