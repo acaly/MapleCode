@@ -3,17 +3,24 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace MapleCodeSharpTest.TestBuilder
+namespace MapleCodeSharp.Builder
 {
-    class DataSectionBuilder
+    public sealed class DataSectionBuilder
     {
         //Assume MemoryStream is safe to be left undisposed.
-        private readonly MemoryStream _stream = new MemoryStream();
+        private readonly MemoryStream _stream;
 
-        public uint Magic => 0x20544144;
+        public DataSectionBuilder(MemoryStream stream)
+        {
+            _stream = stream;
+        }
 
         public int AppendRaw(byte[] data)
         {
+            if (data == null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
             var ret = (int)_stream.Position;
             _stream.Write(data, 0, data.Length);
             return ret;

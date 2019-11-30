@@ -4,9 +4,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace MapleCodeSharpTest.TestBuilder
+namespace MapleCodeSharp.Builder
 {
-    class StringTableBuilder
+    public sealed class StringTableBuilder
     {
         private readonly DataSectionBuilder _dataSection;
         private readonly List<uint> _data = new List<uint>();

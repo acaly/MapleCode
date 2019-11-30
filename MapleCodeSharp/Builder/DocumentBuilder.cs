@@ -4,16 +4,16 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace MapleCodeSharpTest.TestBuilder
+namespace MapleCodeSharp.Builder
 {
-    class DocumentBuilder
+    public sealed class DocumentBuilder
     {
         private readonly int _sizeMode;
-        public DataSectionBuilder Data { get; }
-        public StringTableBuilder String { get; }
-        public TypeTableBuilder Type { get; }
-        public DataSectionBuilder NodeData { get; }
-        public NodeBuilder Node { get; }
+        public DataSectionBuilder DataSection { get; }
+        public StringTableBuilder StringTable { get; }
+        public TypeTableBuilder TypeTable { get; }
+        internal DataSectionBuilder NodeData { get; }
+        public NodeBuilder NodeSection { get; }
 
         internal readonly int SizeStr, SizeType, SizeNode, SizeData;
         private static readonly int[] SizeModes = new[] { 0, 1, 2, 0, 3 };
@@ -51,11 +51,13 @@ namespace MapleCodeSharpTest.TestBuilder
             _sizeMode = SizeModes[sizeStr] | SizeModes[sizeType] << 2 |
                 SizeModes[sizeNode] << 4 | SizeModes[sizeData] << 6;
 
-            Data = new DataSectionBuilder();
-            String = new StringTableBuilder(Data, sizeData);
-            Type = new TypeTableBuilder(sizeStr, sizeData, String.AddString, Data);
-            NodeData = new DataSectionBuilder();
-            Node = new NodeBuilder(this);
+            //Assume MemoryStream is safe to be left not disposed.
+            DataSection = new DataSectionBuilder(new MemoryStream());
+            NodeData = new DataSectionBuilder(new MemoryStream());
+
+            StringTable = new StringTableBuilder(DataSection, sizeData);
+            TypeTable = new TypeTableBuilder(sizeStr, sizeData, StringTable.AddString, DataSection);
+            NodeSection = new NodeBuilder(this);
         }
 
         public byte[] Generate()
@@ -63,10 +65,10 @@ namespace MapleCodeSharpTest.TestBuilder
             using var ms = new MemoryStream();
             using var bw = new BinaryWriter(ms);
 
-            var str = String.Generate();
-            var type = Type.Generate();
+            var str = StringTable.Generate();
+            var type = TypeTable.Generate();
             var node = NodeData.Generate();
-            var data = Data.Generate();
+            var data = DataSection.Generate();
 
             bw.Write((byte)_sizeMode);
             bw.Write(str.Length);

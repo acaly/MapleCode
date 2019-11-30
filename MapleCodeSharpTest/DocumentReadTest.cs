@@ -1,5 +1,5 @@
+using MapleCodeSharp.Builder;
 using MapleCodeSharp.Reader;
-using MapleCodeSharpTest.TestBuilder;
 using System;
 using System.IO;
 using System.Linq;
@@ -27,11 +27,11 @@ namespace MapleCodeSharpTest
             Document doc;
             {
                 var builder = new DocumentBuilder(1, 1, 1, 1);
-                builder.String.AddString("Hello");
-                builder.String.AddString("World");
-                builder.String.AddString("!");
-                builder.String.AddString("  ");
-                builder.String.AddString("");
+                builder.StringTable.AddString("Hello");
+                builder.StringTable.AddString("World");
+                builder.StringTable.AddString("!");
+                builder.StringTable.AddString("  ");
+                builder.StringTable.AddString("");
                 doc = ReadDocument(builder.Generate());
             }
             {
@@ -50,9 +50,9 @@ namespace MapleCodeSharpTest
             Document doc;
             {
                 var builder = new DocumentBuilder(1, 1, 1, 1);
-                var func1 = builder.Type.AddType("func1", 0, false, NodeArgumentTypeValues.U8);
-                var func2 = builder.Type.AddType("func2", 0, true, NodeArgumentTypeValues.U8, NodeArgumentTypeValues.U8);
-                var func3 = builder.Type.AddType("func3", 2, false, NodeArgumentTypeValues.STR);
+                var func1 = builder.TypeTable.AddType("func1", 0, false, NodeArgumentTypeValues.U8);
+                var func2 = builder.TypeTable.AddType("func2", 0, true, NodeArgumentTypeValues.U8, NodeArgumentTypeValues.U8);
+                var func3 = builder.TypeTable.AddType("func3", 2, false, NodeArgumentTypeValues.STR);
                 doc = ReadDocument(builder.Generate());
             }
             {
@@ -82,13 +82,13 @@ namespace MapleCodeSharpTest
             Document doc;
             {
                 var builder = new DocumentBuilder(1, 1, 1, 1);
-                var func1 = builder.Type.AddType("node_a", 0, false, NodeArgumentTypeValues.U32);
-                var func2 = builder.Type.AddType("node_b", 0, false,
+                var func1 = builder.TypeTable.AddType("node_a", 0, false, NodeArgumentTypeValues.U32);
+                var func2 = builder.TypeTable.AddType("node_b", 0, false,
                     NodeArgumentTypeValues.S8, NodeArgumentTypeValues.STR, NodeArgumentTypeValues.F32);
-                var func3 = builder.Type.AddType("node_c", 2, false, NodeArgumentTypeValues.DAT);
-                builder.Node.WriteNode(func1, 10u);
-                builder.Node.WriteNode(func2, -1, "string", 0.1f);
-                builder.Node.WriteNode(func3, new[] { "t1", "t2" }, new byte[] { 0, 1, 2, 3, 4 });
+                var func3 = builder.TypeTable.AddType("node_c", 2, false, NodeArgumentTypeValues.DAT);
+                builder.NodeSection.WriteNode(func1, 10u);
+                builder.NodeSection.WriteNode(func2, -1, "string", 0.1f);
+                builder.NodeSection.WriteNode(func3, new[] { "t1", "t2" }, new byte[] { 0, 1, 2, 3, 4 });
                 doc = ReadDocument(builder.Generate());
             }
             {
@@ -119,26 +119,26 @@ namespace MapleCodeSharpTest
             Document doc;
             {
                 var builder = new DocumentBuilder(1, 1, 1, 1);
-                var type1 = builder.Type.AddType("node_a", 0, true);
-                var type2 = builder.Type.AddType("node_b", 0, false);
-                builder.Node.WriteNode(type1); //n1
-                var len1 = builder.Node.WriteChildrenLength(); //start n1
+                var type1 = builder.TypeTable.AddType("node_a", 0, true);
+                var type2 = builder.TypeTable.AddType("node_b", 0, false);
+                builder.NodeSection.WriteNode(type1); //n1
+                var len1 = builder.NodeSection.StartChildrenList(); //start n1
                 {
-                    builder.Node.WriteNode(type2); //n11
-                    builder.Node.WriteNode(type1); //n12
-                    var len2 = builder.Node.WriteChildrenLength(); //start n12
+                    builder.NodeSection.WriteNode(type2); //n11
+                    builder.NodeSection.WriteNode(type1); //n12
+                    var len2 = builder.NodeSection.StartChildrenList(); //start n12
                     {
-                        builder.Node.WriteNode(type1); //n121
-                        var len3 = builder.Node.WriteChildrenLength(); //start n121
+                        builder.NodeSection.WriteNode(type1); //n121
+                        var len3 = builder.NodeSection.StartChildrenList(); //start n121
                         {
-                            builder.Node.WriteNode(type2); //n1211
+                            builder.NodeSection.WriteNode(type2); //n1211
                         }
-                        builder.Node.FixChildrenLength(len3); //end n121
-                        builder.Node.WriteNode(type2); //n122
+                        builder.NodeSection.EndChildrenList(len3); //end n121
+                        builder.NodeSection.WriteNode(type2); //n122
                     }
-                    builder.Node.FixChildrenLength(len2); //end n12
+                    builder.NodeSection.EndChildrenList(len2); //end n12
                 }
-                builder.Node.FixChildrenLength(len1); //end n1
+                builder.NodeSection.EndChildrenList(len1); //end n1
                 doc = ReadDocument(builder.Generate());
             }
             {
@@ -190,21 +190,21 @@ namespace MapleCodeSharpTest
             Document doc;
             {
                 var builder = new DocumentBuilder(1, 1, 1, 1);
-                var t = builder.Type.AddType("n", 0, false,
+                var t = builder.TypeTable.AddType("n", 0, false,
                     NodeArgumentTypeValues.REF, NodeArgumentTypeValues.REFFIELD);
 
                 var n1a1 = ArgumentBuilder.NewRefArg();
                 var n1a2 = ArgumentBuilder.NewRefArg("x");
-                var n1 = builder.Node.WriteNode(t, n1a1, n1a2);
+                var n1 = builder.NodeSection.WriteNode(t, n1a1, n1a2);
 
                 var n2a1 = ArgumentBuilder.NewRefArg();
                 var n2a2 = ArgumentBuilder.NewRefArg("y");
-                var n2 = builder.Node.WriteNode(t, n2a1, n2a2);
+                var n2 = builder.NodeSection.WriteNode(t, n2a1, n2a2);
 
-                n1a1.FixNodeRef(builder, n1);
-                n1a2.FixNodeRef(builder, n2);
-                n2a1.FixNodeRef(builder, n1);
-                n2a2.FixNodeRef(builder, n2);
+                builder.NodeSection.FixReference(n1a1, n1);
+                builder.NodeSection.FixReference(n1a2, n2);
+                builder.NodeSection.FixReference(n2a1, n1);
+                builder.NodeSection.FixReference(n2a2, n2);
 
                 doc = ReadDocument(builder.Generate());
             }
@@ -233,15 +233,15 @@ namespace MapleCodeSharpTest
             {
                 var builder = new DocumentBuilder(str, type, node, data);
 
-                var t1 = builder.Type.AddType("t1", 1, true, NodeArgumentTypeValues.U16, NodeArgumentTypeValues.REF);
-                var t2 = builder.Type.AddType("t2", 0, false, NodeArgumentTypeValues.STR, NodeArgumentTypeValues.DAT);
+                var t1 = builder.TypeTable.AddType("t1", 1, true, NodeArgumentTypeValues.U16, NodeArgumentTypeValues.REF);
+                var t2 = builder.TypeTable.AddType("t2", 0, false, NodeArgumentTypeValues.STR, NodeArgumentTypeValues.DAT);
 
                 var r = ArgumentBuilder.NewRefArg();
-                builder.Node.WriteNode(t1, new[] { "t" }, 0u, r);
-                var c1 = builder.Node.WriteChildrenLength();
-                var n2 = builder.Node.WriteNode(t2, "string", new byte[] { 1, 2, 3 });
-                r.FixNodeRef(builder, n2);
-                builder.Node.FixChildrenLength(c1);
+                builder.NodeSection.WriteNode(t1, new[] { "t" }, 0u, r);
+                var c1 = builder.NodeSection.StartChildrenList();
+                var n2 = builder.NodeSection.WriteNode(t2, "string", new byte[] { 1, 2, 3 });
+                builder.NodeSection.FixReference(r, n2);
+                builder.NodeSection.EndChildrenList(c1);
 
                 doc = ReadDocument(builder.Generate());
             }

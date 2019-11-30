@@ -3,9 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MapleCodeSharpTest.TestBuilder
+namespace MapleCodeSharp.Builder
 {
-    class ArgumentBuilder
+    public sealed class ArgumentBuilder
     {
         private byte[] _arrayData;
         private float? _floatData;
@@ -40,12 +40,22 @@ namespace MapleCodeSharpTest.TestBuilder
             };
         }
 
+        public static ArgumentBuilder FromInt32(int val)
+        {
+            return val;
+        }
+
         public static implicit operator ArgumentBuilder(uint val)
         {
             return new ArgumentBuilder
             {
                 _uintData = val,
             };
+        }
+
+        public static ArgumentBuilder FromUInt32(uint val)
+        {
+            return val;
         }
 
         public static implicit operator ArgumentBuilder(float val)
@@ -56,12 +66,22 @@ namespace MapleCodeSharpTest.TestBuilder
             };
         }
 
+        public static ArgumentBuilder FromSingle(float val)
+        {
+            return val;
+        }
+
         public static implicit operator ArgumentBuilder(byte[] val)
         {
             return new ArgumentBuilder
             {
                 _arrayData = val,
             };
+        }
+
+        public static ArgumentBuilder From(byte[] val)
+        {
+            return val;
         }
 
         public static implicit operator ArgumentBuilder(string val)
@@ -72,7 +92,12 @@ namespace MapleCodeSharpTest.TestBuilder
             };
         }
 
-        public void Generate(DocumentBuilder document, byte type)
+        public static ArgumentBuilder FromString(string val)
+        {
+            return val;
+        }
+
+        internal void Generate(DocumentBuilder document, byte type)
         {
             switch (type)
             {
@@ -99,14 +124,14 @@ namespace MapleCodeSharpTest.TestBuilder
                     break;
                 case NodeArgumentTypeValues.STR:
                 {
-                    var strIndex = document.String.AddString(_strData);
+                    var strIndex = document.StringTable.AddString(_strData);
                     document.NodeData.AppendNumber(strIndex, document.SizeStr);
                     break;
                 }
                 case NodeArgumentTypeValues.DAT:
                 {
-                    var dataStart = document.Data.AppendRaw(_arrayData);
-                    var dataEnd = document.Data.AppendRaw(new byte[0]);
+                    var dataStart = document.DataSection.AppendRaw(_arrayData);
+                    var dataEnd = document.DataSection.AppendRaw(Array.Empty<byte>());
                     document.NodeData.AppendNumber(dataStart, document.SizeData);
                     document.NodeData.AppendNumber(dataEnd, document.SizeData);
                     break;
@@ -119,7 +144,7 @@ namespace MapleCodeSharpTest.TestBuilder
                 case NodeArgumentTypeValues.REFFIELD:
                 {
                     _nodeRefFixPos = document.NodeData.AppendNumber(0, document.SizeNode);
-                    document.NodeData.AppendNumber(document.String.AddString(_strData), document.SizeStr);
+                    document.NodeData.AppendNumber(document.StringTable.AddString(_strData), document.SizeStr);
                     break;
                 }
                 default:
@@ -127,7 +152,7 @@ namespace MapleCodeSharpTest.TestBuilder
             }
         }
 
-        public void FixNodeRef(DocumentBuilder document, int target)
+        internal void FixNodeRef(DocumentBuilder document, int target)
         {
             if (!_isNodeRef) throw new InvalidOperationException();
             document.NodeData.Fix(_nodeRefFixPos, target, document.SizeNode);

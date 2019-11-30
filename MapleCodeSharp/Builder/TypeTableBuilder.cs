@@ -4,11 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
-namespace MapleCodeSharpTest.TestBuilder
+namespace MapleCodeSharp.Builder
 {
-    class TypeTableBuilder
+    public sealed class TypeTableBuilder
     {
-        private struct TableEntry : IEquatable<TableEntry>
+        private struct TableEntry
         {
             public int Index;
 
