@@ -16,29 +16,6 @@ namespace MapleCodeSharpTest
         }
 
         [Fact]
-        public void ReadStringTable()
-        {
-            Document doc;
-            {
-                var builder = new DocumentBuilder(1, 1, 1, 1);
-                builder.StringTable.AddString("Hello");
-                builder.StringTable.AddString("World");
-                builder.StringTable.AddString("!");
-                builder.StringTable.AddString("  ");
-                builder.StringTable.AddString("");
-                doc = Document.ReadFromData(builder.Generate());
-            }
-            {
-                Assert.Equal(0, doc.LookupStringTable("Hello"));
-                Assert.Equal(1, doc.LookupStringTable("World"));
-                Assert.Equal(2, doc.LookupStringTable("!"));
-                Assert.Equal(3, doc.LookupStringTable("  "));
-                Assert.Equal(4, doc.LookupStringTable(""));
-                Assert.Equal(-1, doc.LookupStringTable(" "));
-            }
-        }
-
-        [Fact]
         public void ReadTypeTable()
         {
             Document doc;

@@ -20,7 +20,6 @@ namespace MapleCodeSharp.Reader
         internal ReadNumberDelegate _readStrIndex, _readTypeIndex, _readNodeOffset, _readDataOffset;
 
         private readonly List<string> _strList = new List<string>();
-        private readonly Dictionary<string, int> _strTable = new Dictionary<string, int>();
         private readonly List<NodeType> _types = new List<NodeType>();
 
         private TableRange _strTableRange, _typeTableRange, _nodeSectionRange, _dataSectionRange;
@@ -205,7 +204,6 @@ namespace MapleCodeSharp.Reader
                 //No string table.
                 return;
             }
-            int i = 0;
             while (pos < _strTableRange.End)
             {
                 int dataOffset = _readDataOffset(ref pos) + _dataSectionRange.Start;
@@ -215,12 +213,7 @@ namespace MapleCodeSharp.Reader
                     throw new ReaderException("Invalid string");
                 }
                 var str = Encoding.UTF8.GetString(_data, dataOffset, dataEnd - dataOffset);
-                if (_strTable.ContainsKey(str))
-                {
-                    throw new ReaderException("Invalid string");
-                }
                 _strList.Add(str);
-                _strTable.Add(str, i++);
             }
         }
 
@@ -248,20 +241,11 @@ namespace MapleCodeSharp.Reader
             }
         }
 
-        public int LookupStringTable(string str)
-        {
-            if (str == null || !_strTable.TryGetValue(str, out var ret))
-            {
-                return -1;
-            }
-            return ret;
-        }
-
-        public string RetrieveString(int index)
+        internal string RetrieveString(int index)
         {
             if (index < 0 || index >= _strList.Count)
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                throw new ReaderException("Invalid string index");
             }
             return _strList[index];
         }
