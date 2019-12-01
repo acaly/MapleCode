@@ -48,7 +48,7 @@ namespace MapleCodeSharp.Reader
 
         private int ReadInt16(ref int pos)
         {
-            var ret = BitConverter.ToInt16(_data, pos);
+            var ret = BitConverter.ToUInt16(_data, pos);
             pos += 2;
             return ret;
         }

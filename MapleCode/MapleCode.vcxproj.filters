@@ -20,9 +20,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MapleCode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MapleCodeReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -11,7 +11,13 @@ namespace MapleCode::Reader
 	struct DocumentData;
 	struct NodeRange;
 
-	enum NodeArgumentType : std::uint8_t
+	class ReaderException : public std::exception
+	{
+	public:
+		ReaderException(const char* msg) : std::exception(msg) {}
+	};
+
+	enum class NodeArgumentType : std::uint8_t
 	{
 		U8 = 0,
 		U16 = 1,
@@ -29,131 +35,215 @@ namespace MapleCode::Reader
 	class NodeType
 	{
 	private:
-		std::string Name;
-		std::uint32_t GenericArgCount;
-		std::vector<NodeArgumentType> ArgumentTypes;
-		bool Children;
+		std::string _name;
+		std::uint32_t _genericArgCount;
+		std::vector<NodeArgumentType> _argumentTypes;
+		bool _hasChildren;
+		std::uint32_t _totalLen;
 
 	public:
 		NodeType(std::string name, std::uint8_t genericCount, std::vector<NodeArgumentType>&& args,
-			bool hasChildren)
-			: Name(std::move(name)), GenericArgCount(genericCount), ArgumentTypes(std::move(args)),
-				Children(hasChildren)
+			bool hasChildren, std::uint32_t totalLen)
+			: _name(std::move(name)), _genericArgCount(genericCount), _argumentTypes(std::move(args)),
+			_hasChildren(hasChildren), _totalLen(totalLen)
 		{
 		}
 
-		std::string GetName() { return Name; }
-		std::uint32_t GetGenericArgCount() { return GenericArgCount; }
+		std::string GetName() { return _name; }
+		std::uint32_t GetGenericArgCount() { return _genericArgCount; }
 
 		const std::vector<NodeArgumentType>& GetArgumentTypes()
 		{
-			return ArgumentTypes;
+			return _argumentTypes;
 		}
 
-		bool HasChildren() { return Children; }
+		bool HasChildren() { return _hasChildren; }
+		std::uint32_t GetTotalLen() { return _totalLen; }
 	};
 
 	struct Node
 	{
 	private:
-		DocumentData* Document;
-		std::int32_t Offset;
+		DocumentData* _document;
+		std::uint32_t _offset;
 
 	public:
-		Node(DocumentData* doc, std::int32_t offset)
-			: Document(doc), Offset(offset)
+		Node(DocumentData* doc, std::uint32_t offset)
+			: _document(doc), _offset(offset)
 		{
 		}
 
-		bool IsNull() { return Document != nullptr; }
-		NodeType* GetNodeType();
-		std::unique_ptr<std::string[]> ReadGenericArguments();
-		std::unique_ptr<NodeArgument[]> ReadArguments();
-		NodeRange GetChildren();
-		Node FindParent();
+		bool IsNull() const { return _document != nullptr; }
+		std::uint32_t GetOffset() const { return _offset; }
+
+		NodeType* GetNodeType() const;
+		void ReadGenericArguments(std::vector<std::string>& results) const;
+		void ReadArguments(std::vector<NodeArgument>& results) const;
+		NodeRange GetChildren() const;
+		Node FindParent() const;
+
+		bool operator==(const Node& other) const
+		{
+			return _document == other._document && _offset == other._offset;
+		}
+
+		bool operator!=(const Node& other) const
+		{
+			return !(*this == other);
+		}
 	};
 
 	struct NodeRange
 	{
 	private:
-		DocumentData* Document;
-		std::int32_t Begin, End;
+		DocumentData* _document;
+		std::uint32_t _begin, _end;
 
 	public:
-		NodeRange(DocumentData* doc, std::int32_t begin, std::int32_t end)
-			: Document(doc), Begin(begin), End(end)
+		NodeRange(DocumentData* doc, std::uint32_t begin, std::uint32_t end)
+			: _document(doc), _begin(begin), _end(end)
 		{
 		}
 
 		struct NodeIterator
 		{
-			DocumentData* Document;
-			std::int32_t Offset;
+			typedef std::input_iterator_tag iterator_category;
+			typedef Node value_type;
+			typedef std::ptrdiff_t difference_type;
+			typedef Node* pointer;
+			typedef Node& reference;
 
-			bool operator==(const NodeIterator& other)
+			DocumentData* _document;
+			std::uint32_t _offset;
+			Node _internalNode;
+
+			bool operator==(const NodeIterator& other) const
 			{
-				return Document == other.Document &&
-					Offset == other.Offset;
+				return _document == other._document &&
+					_offset == other._offset;
 			}
 
-			bool operator!=(const NodeIterator& other)
+			bool operator!=(const NodeIterator& other) const
 			{
 				return !(*this == other);
 			}
 
-			Node operator*() const
+			const Node& operator*() const
 			{
-				return { Document, Offset };
+				return _internalNode;
 			}
 
-			Node operator->() const
+			Node& operator*()
 			{
-				return { Document, Offset };
+				return _internalNode;
 			}
+
+			const Node* operator->() const
+			{
+				ValidateInternalNode();
+				return &_internalNode;
+			}
+
+			Node* operator->()
+			{
+				ValidateInternalNode();
+				return &_internalNode;
+			}
+
+			NodeIterator& operator++();
+
+			NodeIterator operator++(int)
+			{
+				NodeIterator ret = *this;
+				++(*this);
+				return ret;
+			}
+
+		private:
+			void ValidateInternalNode() const;
 		};
 
-		NodeIterator begin();
-		NodeIterator end();
+		NodeIterator begin() { return { _document, _begin, { _document, _begin } }; }
+		NodeIterator end() { return { _document, _end, { _document, _end } }; }
+
+		std::vector<Node> ToList()
+		{
+			return { begin(), end() };
+		}
 	};
 
 	struct NodeArgument
 	{
 	private:
-		DocumentData* Document;
-		NodeArgumentType Type;
-		std::uint32_t Offset;
+		DocumentData* _document;
+		NodeArgumentType _type;
+		std::uint32_t _offset;
 
 	public:
+		NodeArgument(DocumentData* doc, NodeArgumentType type, std::uint32_t offset)
+			: _document(doc), _type(type), _offset(offset)
+		{
+		}
+
+		NodeArgumentType GetArgumentType() { return _type; }
+
 		std::int32_t GetSigned();
 		std::uint32_t GetUnsigned();
 		std::string GetString();
 		float GetFloat();
-		std::unique_ptr<char[]> GetData();
+
+		template <typename T>
+		void GetData(std::vector<T>& result)
+		{
+			std::uint32_t begin, end;
+			GetDataRange(&begin, &end);
+			auto len = end - begin;
+			auto num = len / sizeof(T);
+			if (num * sizeof(T) != len)
+			{
+				throw ReaderException("Incorrect data buffer type");
+			}
+			result.clear();
+			result.resize(num);
+			FillData(result.data(), begin, end);
+		}
+
 		Node GetNode();
-		std::string GetField();
+		std::tuple<Node, std::string> GetField();
+
+	private:
+		std::uint32_t ReadArgNumber(int size);
+		void GetDataRange(std::uint32_t* pBegin, std::uint32_t* pEnd);
+		void FillData(void* buffer, std::uint32_t begin, std::uint32_t end);
 	};
 
 	struct DocumentData
 	{
 		struct TableRange
 		{
-			std::int32_t Start, End;
+			std::uint32_t Start = 0, End = 0;
 
-			void Move(std::int32_t num)
+			void Move(std::uint32_t num)
 			{
 				Start += num;
 				End += num;
 			}
+
+			std::uint32_t GetLength() const
+			{
+				return End - Start;
+			}
 		};
-		static constexpr TableRange EmptyRange = { -1, -1 };
 
 		std::unique_ptr<std::uint8_t[]> Data;
-		int StrWidth, TypeWidth, NodeWidth, DataWidth;
+		int StrWidth = 0, TypeWidth = 0, NodeWidth = 0, DataWidth = 0;
 
 		std::vector<std::string> StrList;
 		std::vector<NodeType> TypeList;
 
 		TableRange StrRange, TypeRange, NodeRange, DataRange;
+
+		std::vector<std::uint32_t> ArgumentWidth;
 	};
 
 	class Document
@@ -162,7 +252,7 @@ namespace MapleCode::Reader
 		DocumentData Data;
 
 	public:
-		static std::unique_ptr<Document> ReadFromData(Document* typeList, const void* data, int length);
+		static std::unique_ptr<Document> ReadFromData(Document* typeList, const void* data, std::uint32_t length);
 
 		NodeRange GetAllNodes()
 		{

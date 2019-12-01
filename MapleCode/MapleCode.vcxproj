@@ -158,7 +158,6 @@
     <ClInclude Include="MapleCodeReader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MapleCode.cpp" />
     <ClCompile Include="MapleCodeReader.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
