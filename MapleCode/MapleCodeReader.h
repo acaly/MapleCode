@@ -73,7 +73,7 @@ namespace MapleCode::Reader
 		{
 		}
 
-		bool IsNull() const { return _document != nullptr; }
+		bool IsNull() const { return _document == nullptr; }
 		std::uint32_t GetOffset() const { return _offset; }
 
 		NodeType* GetNodeType() const;
