@@ -46,16 +46,16 @@ node_i "parent" { node_j; }       # A node with a string value and a child node.
 The binary format consists of 5 parts: header, string table, type table, node section, and data section.
 
 * First byte in header specifies the *SizeMode* of the document. The 8 bit number is split into four 2-byte numbers, 
-giving the size of string table index, type table index, node section offset, and data section offset, respectively. 0b00 
-is invalid value. 0b01 is 1-byte int. 0b10 is 2-byte int. 0b11 is 4-byte int.
-* The SizeMode byte is followed by the size in bytes of the 4 sections (for low bits to high bits, string table, type table,
-node section and data section). The type of these size values are also given by the SizeMode. For example, if the SizeMode
-byte=0b10100101, then the size of the four sections are 1, 1, 2, 2 bytes, respectively.
+giving the size of string table index, type table index, node section offset, and data section offset, from low bits to 
+high bits. 0b00 is invalid value. 0b01 is 1-byte int. 0b10 is 2-byte int. 0b11 is 4-byte int.
+* The SizeMode byte is followed by the size in bytes of the 4 sections (string table, type table, node section and data 
+section). The type of these size values are also given by the SizeMode. For example, if the SizeMode byte=0b10100101, then 
+the size of the four sections are 1, 1, 2, 2 bytes, respectively.
 * String table is a list of data section offset, where the null-terminated UTF8 string should be found. The string table 
 should not contain duplicated items.
 * Type table is a list of type definitions. Each type definition consists of a name (string table index), an argument type 
 list (data section offset), the number of generic argument (8-bit int), and whether the node is a parent node (a 1-byte 
-bool value). The first byte in argument type list is the number of elements in the list, followed by the data of the list, 
+bool value). The first byte in argument type list is the number of elements in the list, followed by the elements of the list, 
 each of which is a 1-byte value. 0=uint8, 1=uint16, 2=uint32, 3=int8, 4=int16, 5=int32, 6=float, 7=string, 8=data, 9=node 
 reference, 10=node reference+field name.
 * Node section consists of a continuous definition of the node hierarchy. For parent nodes, the node data is followed by the 
@@ -68,9 +68,9 @@ Compiling ```func "f1" { a: const<int> 1; return a; }``` gives:
 55                        # SizeMode byte (1, 1, 1, 1)
 05 0C 0B 1F               # String table size 5, type table size 12, node section size 11, data section size 31
 00 05 0A 10 18            # String table (1 byte for each string, offset in data section)
-01 03 00 01               # Type[0]: name=str[1], arguments=data[3], no generic argument (00), has children (01)
-03 0E 01 00               # Type[1]: name=str[3], arguments=data[14], 1 generic argument (01), no children (00)
-04 16 00 00               # Type[2]: name=str[4], arguments=data[22], no generic argument (00), no children (00)
+01 03 00 01               # Type[0]: name=str[1], arguments=data@3, no generic argument (00), has children (01)
+03 0E 01 00               # Type[1]: name=str[3], arguments=data@14, 1 generic argument (01), no children (00)
+04 16 00 00               # Type[2]: name=str[4], arguments=data@22, no generic argument (00), no children (00)
 00 00 08                  # Node[0] @0: type=Type[0], arguments={ str[0] }, children total length=8
 01 02 01 00 00 00         # Node[1] @3: type=Type[1], generic arguments={ str[2] }, arguments={ 0x00000001 }
 02 03                     # Node[2] @9: type=Type[2], arguments={ node@3 }
