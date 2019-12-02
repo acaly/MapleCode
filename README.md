@@ -48,9 +48,9 @@ The binary format consists of 5 parts: header, string table, type table, node se
 * First byte in header specifies the *SizeMode* of the document. The 8 bit number is split into four 2-byte numbers, 
 giving the size of string table index, type table index, node section offset, and data section offset, respectively. 0b00 
 is invalid value. 0b01 is 1-byte int. 0b10 is 2-byte int. 0b11 is 4-byte int.
-* The SizeMode byte is followed by the size in bytes of the 4 sections (string table, type table, node section and
-data section). The type of these size values are also given by the SizeMode. For example, if the SizeMode byte=0b01010202,
-then the size of the four sections are 1, 1, 2, 2 bytes, respectively.
+* The SizeMode byte is followed by the size in bytes of the 4 sections (for low bits to high bits, string table, type table,
+node section and data section). The type of these size values are also given by the SizeMode. For example, if the SizeMode
+byte=0b10100101, then the size of the four sections are 1, 1, 2, 2 bytes, respectively.
 * String table is a list of data section offset, where the null-terminated UTF8 string should be found. The string table 
 should not contain duplicated items.
 * Type table is a list of type definitions. Each type definition consists of a name (string table index), an argument type 
